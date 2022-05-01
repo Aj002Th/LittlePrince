@@ -1,0 +1,9 @@
+.vscode/
+runtime/logs/*.txt
+.ide/
+.idea/
+
+app.ini
+*.exe
+pid
+go.sum

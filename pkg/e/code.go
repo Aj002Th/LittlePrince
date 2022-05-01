@@ -1,0 +1,12 @@
+package e
+
+// 内部错误码
+const (
+	SUCCESS        = 00000
+	ERROR          = 00001
+	INVALID_PARAMS = 00002
+	UNAUTHORIZED   = 00003
+
+	ERROR_AUTH      = 10000
+	ERROR_FORBIDDEN = 10001
+)
