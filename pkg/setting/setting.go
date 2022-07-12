@@ -7,81 +7,74 @@ import (
 	"github.com/go-ini/ini"
 )
 
-type App struct {
-	SessionSecret   string
-	SessionName     string
-	PrefixUrl       string
-	RuntimeRootPath string
-}
+var (
+	cfg *ini.File
 
-var AppSetting = &App{}
+	RunMode string
 
-type Log struct {
-	LogSavePath string
-	LogSaveName string
-	LogFileExt  string
-	TimeFormat  string
-}
+	App      = &AppSetting{}
+	Log      = &LogSetting{}
+	Server   = &ServerSetting{}
+	Database = &DatabaseSetting{}
+	Redis    = &RedisSetting{}
+)
 
-var LogSetting = &Log{}
-
-type Server struct {
-	RunMode      string
-	HttpPort     string
-	ReadTimeout  time.Duration
-	WriteTimeout time.Duration
-}
-
-var ServerSetting = &Server{}
-
-type Database struct {
-	Type     string
-	User     string
-	Password string
-	Host     string
-	Port     string
-	Name     string
-}
-
-var DatabaseSetting = &Database{}
-
-type Redis struct {
-	Host        string
-	Password    string
-	MaxIdle     int
-	MaxActive   int
-	IdleTimeout time.Duration
-}
-
-var RedisSetting = &Redis{}
-
-// here can add more settings
-// ...
-
-var cfg *ini.File
-
-// Setup initialize the configuration instance
 func init() {
 	var err error
 	cfg, err = ini.Load("conf/app.ini")
 	if err != nil {
-		log.Fatalf("setting.Setup, fail to parse 'conf/app.ini': %v", err)
+		log.Fatalf("Fail to parse 'conf/app.ini': %v", err)
 	}
 
-	mapTo("app", AppSetting)
-	mapTo("server", ServerSetting)
-	mapTo("database", DatabaseSetting)
-	mapTo("redis", RedisSetting)
+	RunMode = cfg.Section("").Key("RUN_MODE").MustString("debug")
+	mapTo("app", App)
+	mapTo("log", Log)
+	mapTo("server", Server)
+	mapTo("database", Database)
+	mapTo("redis", Redis)
 
-	ServerSetting.ReadTimeout = ServerSetting.ReadTimeout * time.Second
-	ServerSetting.WriteTimeout = ServerSetting.WriteTimeout * time.Second
-	RedisSetting.IdleTimeout = RedisSetting.IdleTimeout * time.Second
+	// 特殊的转换
+	Server.ReadTimeout = Server.ReadTimeout * time.Second
+	Server.WriteTimeout = Server.WriteTimeout * time.Second
 }
 
-// mapTo map section
+// 将每一个 section 映射到结构体里
 func mapTo(section string, v interface{}) {
 	err := cfg.Section(section).MapTo(v)
 	if err != nil {
 		log.Fatalf("Cfg.MapTo %s err: %v", section, err)
 	}
+}
+
+type AppSetting struct {
+	SessionKey  string `ini:"SESSION_KEY"`
+	SessionName string `ini:"SESSION_NAME"`
+}
+
+type LogSetting struct {
+	SavePath   string `ini:"SAVE_PATH"`
+	FilePrefix string `ini:"FILE_PREFIX"`
+	FileExt    string `ini:"FILE_EXT"`
+	TimeFormat string `ini:"TIME_FORMAT"`
+}
+
+type ServerSetting struct {
+	HttpPort     string        `ini:"HTTP_PORT"`
+	ReadTimeout  time.Duration `ini:"READ_TIMEOUT"`
+	WriteTimeout time.Duration `ini:"WRITE_TIMEOUT"`
+}
+
+type DatabaseSetting struct {
+	Type     string `ini:"TYPE"`
+	User     string `ini:"USER"`
+	Password string `ini:"PASSWORD"`
+	Host     string `ini:"HOST"`
+	Name     string `ini:"NAME"`
+}
+
+type RedisSetting struct {
+	Host     string `ini:"HOST"`
+	DB       int    `ini:"DB"`
+	Password string `ini:"PASSWORD"`
+	PoolSize int    `ini:"POOL_SIZE"`
 }

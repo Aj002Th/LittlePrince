@@ -2,12 +2,15 @@ package db
 
 import (
 	"github.com/Aj002Th/LittlePrince/data"
-	"github.com/jmoiron/sqlx"
+	"github.com/Aj002Th/LittlePrince/model"
+	"gorm.io/gorm"
 )
 
-var db *sqlx.DB
+var db *gorm.DB
 
 func init() {
 	db = data.GetMySQLConn()
-	UserR.init()
+
+	// 迁移 & 建表
+	db.AutoMigrate(&model.User{})
 }

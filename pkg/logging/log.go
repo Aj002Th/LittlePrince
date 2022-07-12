@@ -11,7 +11,7 @@ import (
 var Log = logrus.New()
 
 func init() {
-	logFile, err := GetLogFile("log_")
+	logFile, err := GetLogFile("router_")
 	if err != nil {
 		log.Fatalf("logging.Setup err: %v", err)
 	}

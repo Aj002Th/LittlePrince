@@ -1,18 +1,14 @@
 package router
 
 import (
-	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
-	"syscall"
 
 	"github.com/Aj002Th/LittlePrince/middleware"
-	"github.com/fvbock/endless"
 
 	"github.com/Aj002Th/LittlePrince/pkg/logging"
 	"github.com/Aj002Th/LittlePrince/pkg/setting"
+	v1 "github.com/Aj002Th/LittlePrince/router/api/v1"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
@@ -20,24 +16,8 @@ import (
 
 var store redis.Store
 
-func Setup() {
-	r := InitRouter()
-	server := endless.NewServer(setting.ServerSetting.HttpPort, r)
-	server.BeforeBegin = func(add string) {
-		pid := syscall.Getpid()
-		log.Printf("Actual pid is %d", pid)
-		ioutil.WriteFile("pid", []byte(fmt.Sprintf("%d", pid)), 0777)
-	}
-
-	if err := server.ListenAndServe(); err != nil {
-		log.Fatalln(err.Error())
-	}
-	r.Run(setting.ServerSetting.HttpPort)
-}
-
 // InitRouter initialize routing information
 func InitRouter() *gin.Engine {
-	// engine
 	r := gin.New()
 
 	// io
@@ -51,27 +31,25 @@ func InitRouter() *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 	r.Use(middleware.CORS())
-	r.Use(middleware.Authentication())
 
 	// controller
-	userC := initUserController()
+	userCv1 := v1.InitUserController()
 
 	// init session db : redis
-	store, err = redis.NewStore(30, "tcp", setting.RedisSetting.Host, setting.RedisSetting.Password, []byte(setting.AppSetting.SessionSecret))
+	store, err = redis.NewStore(30, "tcp", setting.Redis.Host, setting.Redis.Password, []byte(setting.App.SessionKey))
 	if err != nil {
 		logging.Fatal("router.InitRouter err: %v", err)
 	}
-	r.Use(sessions.Sessions(setting.AppSetting.SessionName, store))
+	r.Use(sessions.Sessions(setting.App.SessionName, store))
 
-	// log in & out
-	r.POST("/login", userC.Login)
-	r.DELETE("/logout", userC.Logout)
+	r.POST("/register", userCv1.Register)
+	r.POST("/login", userCv1.Login)
+	r.DELETE("/logout", userCv1.Logout)
 
-	// must login
 	api := r.Group("/api")
-	api.Use()
+	api.Use(middleware.Authentication())
 	{
-		// business router
+		api.GET("/userinfo", userCv1.UserInfo)
 	}
 
 	return r

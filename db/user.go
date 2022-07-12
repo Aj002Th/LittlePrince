@@ -1,68 +1,69 @@
 package db
 
-type User struct {
-	ID   uint   `db:"id"`
-	Name string `db:"name"`
-	Pwd  string `db:"pwd"`
-}
+import "github.com/Aj002Th/LittlePrince/model"
 
-var build string = `
-create table if not exists user(
-	id int unsigned,
-	name varchar(255),
-	pwd varchar(255),
-	PRIMARY KEY(id)
-);`
-
-var UserR *User
-
-// 创建表
-func (*User) init() {
-	db.MustExec(build)
-}
-
-// 判断用户是否存在
-func (*User) IsExist(name, pwd string) (bool, error) {
-	var user User
-	sql1 := "select * from users where name = ? && pwd = ?"
-	err := db.Get(&user, sql1, name, pwd)
+func InsertUser(user model.User) (uint, error) {
+	err := db.Create(&user).Error
 	if err != nil {
-		return false, err
+		return 0, err
 	}
 
-	if user.ID > 0 {
-		return true, nil
-	}
-
-	return false, nil
+	return user.ID, nil
 }
 
-func (*User) GetById(id uint) (*User, error) {
-	var user User
-	sql1 := "select * from users where id = ?"
-	err := db.Get(&user, sql1, id)
-	if err != nil {
-		return nil, err
-	}
-
-	if user.ID > 0 {
-		return &user, nil
-	}
-
-	return nil, nil
+func DeleteUser(id uint) error {
+	return db.Where("id = ?", id).Delete(&model.User{}).Error
 }
 
-func (*User) GetByAccount(name, pwd string) (*User, error) {
-	var user User
-	sql1 := "select * from users where name = ? && pwd = ?"
-	err := db.Get(&user, sql1, name, pwd)
+func UpdateUserName(id uint, name string) error {
+	return db.Model(&model.User{}).Where("id = ?", id).Update("name", name).Error
+}
+
+func UpdateUserPwd(id uint, pwd string) error {
+	return db.Model(&model.User{}).Where("id = ?", id).Update("password", pwd).Error
+}
+
+func SelectUserNameByID(id uint) (string, error) {
+	var user model.User
+	err := db.Where("id = ?", id).First(&user).Error
 	if err != nil {
-		return nil, err
+		return "", err
 	}
+	return user.Name, nil
+}
 
-	if user.ID > 0 {
-		return &user, nil
+func SelectUserPasswordByID(id uint) (string, error) {
+	var user model.User
+	err := db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return "", err
 	}
+	return user.Pwd, nil
+}
 
-	return nil, nil
+func SelectUserPasswordByName(name string) (string, error) {
+	var user model.User
+	err := db.Where("name = ?", name).First(&user).Error
+	if err != nil {
+		return "", err
+	}
+	return user.Pwd, nil
+}
+
+func GetUser(id uint) (model.User, error) {
+	var user model.User
+	err := db.Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return model.User{}, err
+	}
+	return user, nil
+}
+
+func GetUserByName(name string) (model.User, error) {
+	var user model.User
+	err := db.Where("name = ?", name).First(&user).Error
+	if err != nil {
+		return model.User{}, err
+	}
+	return user, nil
 }
